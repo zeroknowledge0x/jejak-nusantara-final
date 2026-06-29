@@ -516,7 +516,7 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local hrp = Instance.new("Part")
     hrp.Name = "HumanoidRootPart"
     hrp.Size = Vector3.new(2, 2, 1)
-    hrp.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+    hrp.CFrame = CFrame.new(position + Vector3.new(0, 2.5, 0))
     hrp.Anchored = true
     hrp.CanCollide = false
     hrp.Transparency = 1
@@ -526,16 +526,16 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local torso = Instance.new("Part")
     torso.Name = "Torso"
     torso.Size = Vector3.new(2, 2, 1)
-    torso.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+    torso.CFrame = CFrame.new(position + Vector3.new(0, 2.5, 0))
     torso.Anchored = true
     torso.CanCollide = false
     torso.Color = topColor
     torso.Parent = model
 
-    -- Head
+    -- Head (cubic so mesh makes it round)
     local head = Instance.new("Part")
     head.Name = "Head"
-    head.Size = Vector3.new(2, 1, 1)
+    head.Size = Vector3.new(2, 2, 2)
     head.CFrame = CFrame.new(position + Vector3.new(0, 4.5, 0))
     head.Anchored = true
     head.CanCollide = true
@@ -548,31 +548,78 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     headMesh.Scale = Vector3.new(1.25, 1.25, 1.25)
     headMesh.Parent = head
 
-    -- Face decal
-    local face = Instance.new("Decal")
-    face.Name = "face"
-    face.Face = Enum.NormalId.Front
-    face.Texture = "rbxassetid://7074739"
-    face.Parent = head
+    -- Face: use SurfaceGui for guaranteed visibility
+    local faceGui = Instance.new("SurfaceGui")
+    faceGui.Name = "FaceGui"
+    faceGui.Face = Enum.NormalId.Front
+    faceGui.Parent = head
+
+    -- Left eye
+    local leftEye = Instance.new("Frame")
+    leftEye.Name = "LeftEye"
+    leftEye.Size = UDim2.new(0.15, 0, 0.15, 0)
+    leftEye.Position = UDim2.new(0.25, 0, 0.3, 0)
+    leftEye.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    leftEye.BorderSizePixel = 0
+    leftEye.Parent = faceGui
+
+    -- Right eye
+    local rightEye = Instance.new("Frame")
+    rightEye.Name = "RightEye"
+    rightEye.Size = UDim2.new(0.15, 0, 0.15, 0)
+    rightEye.Position = UDim2.new(0.6, 0, 0.3, 0)
+    rightEye.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    rightEye.BorderSizePixel = 0
+    rightEye.Parent = faceGui
+
+    -- Mouth (smile)
+    local mouth = Instance.new("Frame")
+    mouth.Name = "Mouth"
+    mouth.Size = UDim2.new(0.3, 0, 0.08, 0)
+    mouth.Position = UDim2.new(0.35, 0, 0.6, 0)
+    mouth.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+    mouth.BorderSizePixel = 0
+    mouth.Parent = faceGui
 
     -- Hair for Dosen (special case)
     if name == "Pak Dosen" then
         local hair = Instance.new("Part")
         hair.Name = "Hair"
-        hair.Size = Vector3.new(2.2, 0.4, 2.2)
-        hair.CFrame = CFrame.new(position + Vector3.new(0, 5.2, 0))
+        hair.Size = Vector3.new(2.3, 0.5, 2.3)
+        hair.CFrame = CFrame.new(position + Vector3.new(0, 5.8, 0))
         hair.Anchored = true
         hair.CanCollide = false
         hair.Color = Color3.fromRGB(40, 40, 40)
         hair.Material = Enum.Material.SmoothPlastic
         hair.Parent = model
+
+        -- Mortarboard (graduation cap) for Pak Dosen
+        local cap = Instance.new("Part")
+        cap.Name = "Cap"
+        cap.Size = Vector3.new(2.8, 0.2, 2.8)
+        cap.CFrame = CFrame.new(position + Vector3.new(0, 6.3, 0))
+        cap.Anchored = true
+        cap.CanCollide = false
+        cap.Color = Color3.fromRGB(20, 20, 20)
+        cap.Material = Enum.Material.SmoothPlastic
+        cap.Parent = model
+
+        local topFlat = Instance.new("Part")
+        topFlat.Name = "CapTop"
+        topFlat.Size = Vector3.new(3.2, 0.15, 3.2)
+        topFlat.CFrame = CFrame.new(position + Vector3.new(0, 6.45, 0))
+        topFlat.Anchored = true
+        topFlat.CanCollide = false
+        topFlat.Color = Color3.fromRGB(20, 20, 20)
+        topFlat.Material = Enum.Material.SmoothPlastic
+        topFlat.Parent = model
     end
 
     -- Left Arm
     local leftArm = Instance.new("Part")
     leftArm.Name = "Left Arm"
     leftArm.Size = Vector3.new(1, 2, 1)
-    leftArm.CFrame = CFrame.new(position + Vector3.new(-1.5, 3, 0))
+    leftArm.CFrame = CFrame.new(position + Vector3.new(-1.5, 3.5, 0))
     leftArm.Anchored = true
     leftArm.CanCollide = false
     leftArm.Color = skinColor
@@ -582,7 +629,7 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local rightArm = Instance.new("Part")
     rightArm.Name = "Right Arm"
     rightArm.Size = Vector3.new(1, 2, 1)
-    rightArm.CFrame = CFrame.new(position + Vector3.new(1.5, 3, 0))
+    rightArm.CFrame = CFrame.new(position + Vector3.new(1.5, 3.5, 0))
     rightArm.Anchored = true
     rightArm.CanCollide = false
     rightArm.Color = skinColor
@@ -592,7 +639,7 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local leftLeg = Instance.new("Part")
     leftLeg.Name = "Left Leg"
     leftLeg.Size = Vector3.new(1, 2, 1)
-    leftLeg.CFrame = CFrame.new(position + Vector3.new(-0.5, 1, 0))
+    leftLeg.CFrame = CFrame.new(position + Vector3.new(-0.5, 1.5, 0))
     leftLeg.Anchored = true
     leftLeg.CanCollide = false
     leftLeg.Color = bottomColor
@@ -602,7 +649,7 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local rightLeg = Instance.new("Part")
     rightLeg.Name = "Right Leg"
     rightLeg.Size = Vector3.new(1, 2, 1)
-    rightLeg.CFrame = CFrame.new(position + Vector3.new(0.5, 1, 0))
+    rightLeg.CFrame = CFrame.new(position + Vector3.new(0.5, 1.5, 0))
     rightLeg.Anchored = true
     rightLeg.CanCollide = false
     rightLeg.Color = bottomColor
