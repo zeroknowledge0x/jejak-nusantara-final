@@ -1475,6 +1475,264 @@ end
 -- WORLD CREATION (MASSIVELY EXPANDED)
 -- ============================================
 
+-- ============================================
+-- ADDITIONAL DECORATIVE HELPERS (Design Taste)
+-- ============================================
+
+-- Helper: build a lamp post
+local function buildLampPost(parent, pos)
+    local pole = Instance.new("Part")
+    pole.Name = "Pole"
+    pole.Size = Vector3.new(0.4, 8, 0.4)
+    pole.Position = pos + Vector3.new(0, 4, 0)
+    pole.Anchored = true
+    pole.Color = Color3.fromRGB(40, 40, 40)
+    pole.Material = Enum.Material.Metal
+    pole.Parent = parent
+
+    local lamp = Instance.new("Part")
+    lamp.Name = "Lamp"
+    lamp.Size = Vector3.new(1.5, 1, 1.5)
+    lamp.Position = pos + Vector3.new(0, 8.5, 0)
+    lamp.Anchored = true
+    lamp.Color = Color3.fromRGB(255, 240, 180)
+    lamp.Material = Enum.Material.Neon
+    lamp.Parent = parent
+
+    local light = Instance.new("PointLight")
+    light.Color = Color3.fromRGB(255, 230, 180)
+    light.Brightness = 1.5
+    light.Range = 25
+    light.Parent = lamp
+end
+
+-- Helper: build a bench
+local function buildBench(parent, pos, facing)
+    local seat = Instance.new("Part")
+    seat.Name = "Seat"
+    seat.Size = Vector3.new(4, 0.4, 1.5)
+    seat.Position = pos + Vector3.new(0, 1.2, 0)
+    seat.Anchored = true
+    seat.Color = Color3.fromRGB(120, 80, 40)
+    seat.Material = Enum.Material.Wood
+    seat.Parent = parent
+
+    local back = Instance.new("Part")
+    back.Name = "Back"
+    back.Size = Vector3.new(4, 1.5, 0.3)
+    back.Position = pos + Vector3.new(0, 2.2, -0.6)
+    back.Anchored = true
+    back.Color = Color3.fromRGB(120, 80, 40)
+    back.Material = Enum.Material.Wood
+    back.Parent = parent
+
+    for _, xOff in ipairs({-1.5, 1.5}) do
+        local leg = Instance.new("Part")
+        leg.Name = "Leg"
+        leg.Size = Vector3.new(0.4, 1.2, 1.5)
+        leg.Position = pos + Vector3.new(xOff, 0.6, 0)
+        leg.Anchored = true
+        leg.Color = Color3.fromRGB(60, 40, 20)
+        leg.Material = Enum.Material.Wood
+        leg.Parent = parent
+    end
+end
+
+-- Helper: build a flower bed
+local function buildFlowerBed(parent, pos, size, flowerColor)
+    local bed = Instance.new("Part")
+    bed.Name = "FlowerBed"
+    bed.Size = size or Vector3.new(6, 0.3, 3)
+    bed.Position = pos + Vector3.new(0, 0.15, 0)
+    bed.Anchored = true
+    bed.Color = Color3.fromRGB(80, 50, 20)
+    bed.Material = Enum.Material.Ground
+    bed.Parent = parent
+
+    local fc = flowerColor or Color3.fromRGB(255, 100, 150)
+    for i = 1, 5 do
+        local flower = Instance.new("Part")
+        flower.Name = "Flower"
+        flower.Size = Vector3.new(0.6, 0.8, 0.6)
+        flower.Position = pos + Vector3.new(math.random(-2, 2), 0.7, math.random(-1, 1))
+        flower.Anchored = true
+        flower.Color = fc
+        flower.Material = Enum.Material.SmoothPlastic
+        flower.Shape = Enum.PartType.Ball
+        flower.Parent = parent
+    end
+end
+
+-- Helper: build decorative rocks
+local function buildRock(parent, pos, size)
+    local rock = Instance.new("Part")
+    rock.Name = "Rock"
+    rock.Size = size or Vector3.new(2, 1.5, 2)
+    rock.Position = pos + Vector3.new(0, 0.75, 0)
+    rock.Anchored = true
+    rock.Color = Color3.fromRGB(140, 135, 125)
+    rock.Material = Enum.Material.Slate
+    rock.Parent = parent
+end
+
+-- Helper: build a campfire
+local function buildCampfire(parent, pos)
+    -- Stone ring
+    for i = 0, 7 do
+        local angle = (i / 8) * math.pi * 2
+        local stone = Instance.new("Part")
+        stone.Name = "Stone"
+        stone.Size = Vector3.new(1, 0.6, 1)
+        stone.Position = pos + Vector3.new(math.cos(angle) * 2, 0.3, math.sin(angle) * 2)
+        stone.Anchored = true
+        stone.Color = Color3.fromRGB(120, 115, 110)
+        stone.Material = Enum.Material.Slate
+        stone.Parent = parent
+    end
+
+    -- Logs
+    for i = 0, 2 do
+        local angle = (i / 3) * math.pi * 2
+        local log = Instance.new("Part")
+        log.Name = "Log"
+        log.Size = Vector3.new(2.5, 0.4, 0.4)
+        log.Position = pos + Vector3.new(0, 0.4 + i * 0.2, 0)
+        log.Anchored = true
+        log.CFrame = CFrame.new(log.Position) * CFrame.Angles(0, angle, 0)
+        log.Color = Color3.fromRGB(80, 50, 20)
+        log.Material = Enum.Material.Wood
+        log.Parent = parent
+    end
+
+    -- Fire (neon)
+    local fire = Instance.new("Part")
+    fire.Name = "Fire"
+    fire.Size = Vector3.new(1.2, 2, 1.2)
+    fire.Position = pos + Vector3.new(0, 1.5, 0)
+    fire.Anchored = true
+    fire.CanCollide = false
+    fire.Color = Color3.fromRGB(255, 120, 20)
+    fire.Material = Enum.Material.Neon
+    fire.Parent = parent
+
+    local light = Instance.new("PointLight")
+    light.Color = Color3.fromRGB(255, 150, 50)
+    light.Brightness = 2
+    light.Range = 30
+    light.Parent = fire
+end
+
+-- Helper: build a flag pole with Indonesian flag
+local function buildFlag(parent, pos, flagColor)
+    local pole = Instance.new("Part")
+    pole.Name = "Pole"
+    pole.Size = Vector3.new(0.3, 12, 0.3)
+    pole.Position = pos + Vector3.new(0, 6, 0)
+    pole.Anchored = true
+    pole.Color = Color3.fromRGB(180, 180, 180)
+    pole.Material = Enum.Material.Metal
+    pole.Parent = parent
+
+    local flag = Instance.new("Part")
+    flag.Name = "Flag"
+    flag.Size = Vector3.new(4, 2.5, 0.1)
+    flag.Position = pos + Vector3.new(2, 10.5, 0)
+    flag.Anchored = true
+    flag.Color = flagColor or Color3.fromRGB(255, 0, 0)
+    flag.Material = Enum.Material.SmoothPlastic
+    flag.Parent = parent
+end
+
+-- Helper: build a fence section
+local function buildFence(parent, startPos, endPos, height)
+    local h = height or 2
+    local diff = endPos - startPos
+    local len = diff.Magnitude
+    local mid = (startPos + endPos) / 2
+
+    local rail = Instance.new("Part")
+    rail.Name = "FenceRail"
+    rail.Size = Vector3.new(len, 0.3, 0.3)
+    rail.Position = mid + Vector3.new(0, h, 0)
+    rail.Anchored = true
+    rail.CFrame = CFrame.new(rail.Position, endPos + Vector3.new(0, h, 0))
+    rail.Color = Color3.fromRGB(140, 100, 50)
+    rail.Material = Enum.Material.Wood
+    rail.Parent = parent
+
+    -- Posts every 4 studs
+    local posts = math.floor(len / 4)
+    for i = 0, posts do
+        local t = i / posts
+        local postPos = startPos:Lerp(endPos, t)
+        local post = Instance.new("Part")
+        post.Name = "FencePost"
+        post.Size = Vector3.new(0.3, h + 0.5, 0.3)
+        post.Position = postPos + Vector3.new(0, (h + 0.5) / 2, 0)
+        post.Anchored = true
+        post.Color = Color3.fromRGB(120, 80, 35)
+        post.Material = Enum.Material.Wood
+        post.Parent = parent
+    end
+end
+
+-- Helper: build a window on a building wall
+local function buildWindow(parent, pos)
+    local frame = Instance.new("Part")
+    frame.Name = "WindowFrame"
+    frame.Size = Vector3.new(2.5, 2.5, 0.2)
+    frame.Position = pos
+    frame.Anchored = true
+    frame.Color = Color3.fromRGB(100, 70, 30)
+    frame.Material = Enum.Material.Wood
+    frame.Parent = parent
+
+    local glass = Instance.new("Part")
+    glass.Name = "Glass"
+    glass.Size = Vector3.new(2, 2, 0.1)
+    glass.Position = pos + Vector3.new(0, 0, 0.1)
+    glass.Anchored = true
+    glass.Color = Color3.fromRGB(180, 220, 255)
+    glass.Material = Enum.Material.Glass
+    glass.Transparency = 0.5
+    glass.Parent = parent
+end
+
+-- Helper: build a signpost with directions
+local function buildSignpost(parent, pos, texts)
+    local pole = Instance.new("Part")
+    pole.Name = "Pole"
+    pole.Size = Vector3.new(0.4, 6, 0.4)
+    pole.Position = pos + Vector3.new(0, 3, 0)
+    pole.Anchored = true
+    pole.Color = Color3.fromRGB(100, 70, 30)
+    pole.Material = Enum.Material.Wood
+    pole.Parent = parent
+
+    for i, text in ipairs(texts or {}) do
+        local sign = Instance.new("Part")
+        sign.Name = "Sign" .. i
+        sign.Size = Vector3.new(5, 1.2, 0.3)
+        sign.Position = pos + Vector3.new(0, 5 + (i - 1) * 1.5, 0)
+        sign.Anchored = true
+        sign.Color = Color3.fromRGB(140, 100, 50)
+        sign.Material = Enum.Material.Wood
+        sign.Parent = parent
+
+        local gui = Instance.new("SurfaceGui")
+        gui.Face = Enum.NormalId.Front
+        gui.Parent = sign
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, 0, 1, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = text
+        lbl.TextScaled = true
+        lbl.Font = Enum.Font.GothamBold
+        lbl.TextColor3 = Color3.fromRGB(255, 248, 230)
+        lbl.Parent = gui
+    end
+end
+
 local function createWorld()
     print("🌍 Creating world...")
 
@@ -1626,8 +1884,8 @@ local function createWorld()
     }) do buildTree(workspace, tpos, 10) end
 
     -- Flag poles near kampus entrance
-    buildFlagPole(workspace, Vector3.new(-8, 0, 12))
-    buildFlagPole(workspace, Vector3.new(8, 0, 12))
+    buildFlag(workspace, Vector3.new(-8, 0, 12), Color3.fromRGB(255, 0, 0))
+    buildFlag(workspace, Vector3.new(8, 0, 12), Color3.fromRGB(255, 255, 255))
 
     -- Lamp posts along kampus paths
     for _, lpos in ipairs({
@@ -1642,17 +1900,32 @@ local function createWorld()
     buildBench(workspace, Vector3.new(0, 0, 18), 180)
     buildBench(workspace, Vector3.new(-8, 0, 22), 90)
 
-    -- Fences around kampus
-    buildFence(workspace, Vector3.new(0, 0, 28), 50, 0)    -- Front
-    buildFence(workspace, Vector3.new(0, 0, -28), 50, 0)   -- Back
-    buildFence(workspace, Vector3.new(28, 0, 0), 50, 90)   -- Right
-    buildFence(workspace, Vector3.new(-28, 0, 0), 50, 90)  -- Left
+    -- Flower beds around kampus
+    buildFlowerBed(workspace, Vector3.new(-15, 0, -12), Vector3.new(8, 0.3, 3), Color3.fromRGB(255, 100, 150))
+    buildFlowerBed(workspace, Vector3.new(15, 0, -12), Vector3.new(8, 0.3, 3), Color3.fromRGB(255, 200, 50))
+    buildFlowerBed(workspace, Vector3.new(-20, 0, 15), Vector3.new(6, 0.3, 4), Color3.fromRGB(200, 100, 255))
+    buildFlowerBed(workspace, Vector3.new(20, 0, 15), Vector3.new(6, 0.3, 4), Color3.fromRGB(100, 200, 255))
+
+    -- Campfire in kampus courtyard
+    buildCampfire(workspace, Vector3.new(0, 0, 0))
+
+    -- Decorative rocks
+    buildRock(workspace, Vector3.new(-22, 0, -18), Vector3.new(3, 2, 2))
+    buildRock(workspace, Vector3.new(22, 0, -18), Vector3.new(2.5, 1.8, 2.5))
+    buildRock(workspace, Vector3.new(-18, 0, 22), Vector3.new(2, 1.5, 2))
+    buildRock(workspace, Vector3.new(18, 0, 22), Vector3.new(2.5, 2, 2))
+
+    -- Signpost near spawn
+    buildSignpost(workspace, Vector3.new(5, 0, 20), {
+        "← Jawa | Sumatra →",
+        "← Bali | Papua →",
+    })
 
     -- Flower beds around kampus
-    buildFlowerBed(workspace, Vector3.new(-20, 0, 20), 8, 4, Color3.fromRGB(255, 100, 150))
-    buildFlowerBed(workspace, Vector3.new(20, 0, 20), 8, 4, Color3.fromRGB(255, 200, 50))
-    buildFlowerBed(workspace, Vector3.new(-20, 0, -24), 6, 3, Color3.fromRGB(200, 100, 255))
-    buildFlowerBed(workspace, Vector3.new(20, 0, -24), 6, 3, Color3.fromRGB(100, 200, 255))
+    buildFlowerBed(workspace, Vector3.new(-20, 0, 20), Vector3.new(8, 0.4, 4), Color3.fromRGB(255, 100, 150))
+    buildFlowerBed(workspace, Vector3.new(20, 0, 20), Vector3.new(8, 0.4, 4), Color3.fromRGB(255, 200, 50))
+    buildFlowerBed(workspace, Vector3.new(-20, 0, -24), Vector3.new(6, 0.4, 3), Color3.fromRGB(200, 100, 255))
+    buildFlowerBed(workspace, Vector3.new(20, 0, -24), Vector3.new(6, 0.4, 3), Color3.fromRGB(100, 200, 255))
 
     -- Decorative rocks near kampus
     buildRock(workspace, Vector3.new(-22, 0, 15), Vector3.new(2.5, 1.8, 2.5))
@@ -1706,13 +1979,17 @@ local function createWorld()
     -- Jawa water feature
     buildWater(workspace, Vector3.new(-100, 0.15, -140), Vector3.new(15, 0.3, 15))
 
-    -- Jawa trees (dense, 10 trees)
+    -- Jawa decorations
+    buildLampPost(workspace, Vector3.new(-120, 0, -120))
+    buildLampPost(workspace, Vector3.new(-140, 0, -120))
+    buildFlowerBed(workspace, Vector3.new(-115, 0, -135), Vector3.new(6, 0.3, 3), Color3.fromRGB(255, 200, 50))
+    buildSignpost(workspace, Vector3.new(-95, 0, -120), {"Rumah Joglo", "Pendopo", "Gamelan"})
+
+    -- Jawa trees
     for _, tpos in ipairs({
         Vector3.new(-150, 0, -150), Vector3.new(-90, 0, -150),
         Vector3.new(-150, 0, -90), Vector3.new(-90, 0, -90),
         Vector3.new(-140, 0, -130), Vector3.new(-100, 0, -140),
-        Vector3.new(-155, 0, -120), Vector3.new(-85, 0, -110),
-        Vector3.new(-145, 0, -100), Vector3.new(-95, 0, -155),
     }) do buildTree(workspace, tpos, 12) end
 
     -- Jawa benches and lamp
@@ -1721,8 +1998,8 @@ local function createWorld()
     buildLampPost(workspace, Vector3.new(-95, 0, -108))
 
     -- Jawa flower beds
-    buildFlowerBed(workspace, Vector3.new(-125, 0, -108), 6, 4, Color3.fromRGB(255, 180, 50))
-    buildFlowerBed(workspace, Vector3.new(-105, 0, -148), 5, 3, Color3.fromRGB(255, 120, 80))
+    buildFlowerBed(workspace, Vector3.new(-125, 0, -108), Vector3.new(6, 0.4, 4), Color3.fromRGB(255, 180, 50))
+    buildFlowerBed(workspace, Vector3.new(-105, 0, -148), Vector3.new(5, 0.4, 3), Color3.fromRGB(255, 120, 80))
 
     -- Jawa sign
     buildSignPost(workspace, Vector3.new(-120, 0, -95), "🏛️ Wilayah Jawa\nBudaya Jawa Tengah", Color3.fromRGB(255, 200, 100))
@@ -1762,13 +2039,19 @@ local function createWorld()
         Vector3.new(95, 0, -110), Vector3.new(155, 0, -105),
     }) do buildTree(workspace, tpos, 11) end
 
+    -- Sumatra decorations
+    buildLampPost(workspace, Vector3.new(120, 0, -120))
+    buildLampPost(workspace, Vector3.new(140, 0, -120))
+    buildFlowerBed(workspace, Vector3.new(125, 0, -135), Vector3.new(6, 0.3, 3), Color3.fromRGB(255, 150, 50))
+    buildSignpost(workspace, Vector3.new(105, 0, -120), {"Rumah Gadang", "Pasar", "Balai"})
+
     -- Sumatra benches and lamps
     buildBench(workspace, Vector3.new(120, 0, -108), -30)
     buildLampPost(workspace, Vector3.new(125, 0, -108))
     buildLampPost(workspace, Vector3.new(115, 0, -108))
 
     -- Sumatra flower beds
-    buildFlowerBed(workspace, Vector3.new(115, 0, -130), 5, 4, Color3.fromRGB(255, 50, 50))
+    buildFlowerBed(workspace, Vector3.new(115, 0, -130), Vector3.new(5, 0.4, 4), Color3.fromRGB(255, 50, 50))
 
     -- Sumatra sign
     buildSignPost(workspace, Vector3.new(120, 0, -95), "🟢 Wilayah Sumatra\nBudaya Minangkabau", Color3.fromRGB(100, 255, 100))
@@ -1810,18 +2093,14 @@ local function createWorld()
         Vector3.new(-130, 0, 105), Vector3.new(-110, 0, 155),
     }) do buildTree(workspace, tpos, 9) end
 
-    -- Bali benches and lamps
-    buildBench(workspace, Vector3.new(-115, 0, 125), 0)
-    buildBench(workspace, Vector3.new(-135, 0, 145), 45)
+    -- Bali decorations
     buildLampPost(workspace, Vector3.new(-108, 0, 130))
     buildLampPost(workspace, Vector3.new(-132, 0, 130))
-
-    -- Bali flower beds (tropical flowers)
-    buildFlowerBed(workspace, Vector3.new(-125, 0, 120), 7, 4, Color3.fromRGB(255, 100, 50))
-    buildFlowerBed(workspace, Vector3.new(-95, 0, 145), 5, 3, Color3.fromRGB(255, 200, 0))
-
-    -- Bali sign
-    buildSignPost(workspace, Vector3.new(-120, 0, 98), "🔵 Wilayah Bali\nPulau Dewata", Color3.fromRGB(100, 150, 255))
+    buildFlowerBed(workspace, Vector3.new(-125, 0, 120), Vector3.new(7, 0.3, 4), Color3.fromRGB(255, 100, 50))
+    buildFlowerBed(workspace, Vector3.new(-95, 0, 145), Vector3.new(5, 0.3, 3), Color3.fromRGB(255, 200, 0))
+    buildSignpost(workspace, Vector3.new(-120, 0, 98), {"Pura Besakih", "Sanggar Tari", "Bale Bali"})
+    buildBench(workspace, Vector3.new(-115, 0, 125), 0)
+    buildBench(workspace, Vector3.new(-135, 0, 145), 45)
 
     -- Bali rocks (volcanic)
     buildRock(workspace, Vector3.new(-150, 0, 115), Vector3.new(3, 2.5, 3))
@@ -1923,12 +2202,12 @@ local function createWorld()
     -- Papua pond
     buildWater(workspace, Vector3.new(140, 0.15, 110), Vector3.new(12, 0.3, 12))
 
-    -- Papua benches and lamps
-    buildBench(workspace, Vector3.new(130, 0, 115), 90)
+    -- Papua decorations
     buildLampPost(workspace, Vector3.new(132, 0, 108))
-
-    -- Papua sign
-    buildSignPost(workspace, Vector3.new(120, 0, 98), "🟣 Wilayah Papua\nTanah Cenderawasih", Color3.fromRGB(200, 100, 255))
+    buildLampPost(workspace, Vector3.new(118, 0, 130))
+    buildFlowerBed(workspace, Vector3.new(125, 0, 120), Vector3.new(5, 0.3, 3), Color3.fromRGB(100, 200, 100))
+    buildSignpost(workspace, Vector3.new(120, 0, 98), {"Honai", "Hutan", "Danau"})
+    buildBench(workspace, Vector3.new(130, 0, 115), 90)
 
     -- Papua rocks
     buildRock(workspace, Vector3.new(100, 0, 120), Vector3.new(3.5, 2.5, 3))
@@ -1955,10 +2234,10 @@ local function createWorld()
         Color3.fromRGB(150, 0, 200), "🟣 Wilayah Papua", "quiz_papua")
 
     -- Portal area decorations (flowers near portals)
-    buildFlowerBed(workspace, Vector3.new(-85, 0, -72), 5, 3, Color3.fromRGB(255, 215, 0))
-    buildFlowerBed(workspace, Vector3.new(85, 0, -72), 5, 3, Color3.fromRGB(0, 200, 0))
-    buildFlowerBed(workspace, Vector3.new(-85, 0, 88), 5, 3, Color3.fromRGB(0, 150, 255))
-    buildFlowerBed(workspace, Vector3.new(85, 0, 88), 5, 3, Color3.fromRGB(150, 0, 200))
+    buildFlowerBed(workspace, Vector3.new(-85, 0, -72), Vector3.new(5, 0.4, 3), Color3.fromRGB(255, 215, 0))
+    buildFlowerBed(workspace, Vector3.new(85, 0, -72), Vector3.new(5, 0.4, 3), Color3.fromRGB(0, 200, 0))
+    buildFlowerBed(workspace, Vector3.new(-85, 0, 88), Vector3.new(5, 0.4, 3), Color3.fromRGB(0, 150, 255))
+    buildFlowerBed(workspace, Vector3.new(85, 0, 88), Vector3.new(5, 0.4, 3), Color3.fromRGB(150, 0, 200))
 
     -- Portal lamp posts
     buildLampPost(workspace, Vector3.new(-86, 0, -78))
@@ -2007,8 +2286,8 @@ local function createWorld()
     buildRock(workspace, Vector3.new(10, 0, -45), Vector3.new(2, 1.2, 2.5))
 
     -- Extra flower patches in main area
-    buildFlowerBed(workspace, Vector3.new(-35, 0, 15), 6, 3, Color3.fromRGB(255, 150, 200))
-    buildFlowerBed(workspace, Vector3.new(35, 0, -15), 6, 3, Color3.fromRGB(200, 255, 100))
+    buildFlowerBed(workspace, Vector3.new(-35, 0, 15), Vector3.new(6, 0.4, 3), Color3.fromRGB(255, 150, 200))
+    buildFlowerBed(workspace, Vector3.new(35, 0, -15), Vector3.new(6, 0.4, 3), Color3.fromRGB(200, 255, 100))
 
     -- Lamp posts along main paths
     buildLampPost(workspace, Vector3.new(-35, 0, 0))
