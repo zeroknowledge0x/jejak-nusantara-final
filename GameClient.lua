@@ -657,7 +657,7 @@ local angklungButtons = UI.create("Frame", {
 	BackgroundTransparency = 1,
 	Parent = angklungFrame,
 }, {
-	UI.listLayout(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.CENTER),
+	UI.listLayout(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center),
 })
 
 local noteBtns = {}
@@ -1269,7 +1269,7 @@ local endingContent = UI.create("Frame", {
 	BackgroundTransparency = 1,
 	Parent = endingFrame,
 }, {
-	UI.listLayout(Enum.FillDirection.Vertical, 16, Enum.HorizontalAlignment.CENTER),
+	UI.listLayout(Enum.FillDirection.Vertical, 16, Enum.HorizontalAlignment.Center),
 	UI.padding(60, 20, 40, 20),
 })
 
@@ -1302,7 +1302,7 @@ local endingSkillsFrame = UI.create("Frame", {
 	BackgroundTransparency = 1,
 	Parent = endingContent,
 }, {
-	UI.listLayout(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.CENTER),
+	UI.listLayout(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Center),
 })
 
 local endingRestartBtn = UI.create("TextButton", {
@@ -1542,12 +1542,16 @@ end
 ---------------------------------------------------------------------
 
 -- UI Update from server
-RE_UpdateUI.OnClientEvent:Connect(function(action, data)
-	if action == "sync" then
+RE_UpdateUI.OnClientEvent:Connect(function(payload)
+	if type(payload) ~= "table" then return end
+	local action = payload.type or payload.action
+	local data = payload
+
+	if action == "sync" or action == "init" then
 		updateHUD(data)
-	elseif action == "skill_up" then
+	elseif action == "skill_update" or action == "skill_up" then
 		local skill = data.skill
-		local pts = data.points
+		local pts = data.points or data.value or 0
 		if skillBars[skill] then
 			showNotification("+" .. pts .. " " .. (SKILL_LABELS[skill] or skill), THEME.accent, 2)
 		end
@@ -1560,22 +1564,51 @@ RE_UpdateUI.OnClientEvent:Connect(function(action, data)
 		if data.message then
 			addJournalEntry(data.message)
 		end
+	elseif action == "cultural_points" then
+		-- Update progress display
+		if data.value then
+			showNotification("💡 +" .. data.value .. " Poin Budaya", THEME.gold, 2)
+		end
+	elseif action == "npc_blocked" then
+		showNotification(data.reason or "NPC tidak tersedia", THEME.warning, 3)
+	elseif action == "dialogue_blocked" then
+		showNotification(data.reason or "Dialog terkunci", THEME.warning, 3)
 	end
 end)
 
 -- Dialogue from server
-RE_DialogueEvent.OnClientEvent:Connect(function(npcName, text, choices)
-	showDialogue(npcName, text, choices)
+RE_DialogueEvent.OnClientEvent:Connect(function(dlgKey, dlgStep)
+	if type(dlgStep) == "table" then
+		local npcName = dlgStep.speaker or dlgKey or "NPC"
+		local text = dlgStep.text or dlgStep.message or ""
+		local choices = dlgStep.choices
+		showDialogue(npcName, text, choices)
+	elseif type(dlgStep) == "string" then
+		-- Simple text dialogue
+		showDialogue(dlgKey or "NPC", dlgStep, nil)
+	end
 end)
 
 -- Cultural insight from server
-RE_CulturalInsight.OnClientEvent:Connect(function(title, text)
-	showCulturalInsight(title, text)
+RE_CulturalInsight.OnClientEvent:Connect(function(payload)
+	if type(payload) == "table" then
+		showCulturalInsight(payload.title or "Wawasan", payload.text or "")
+	elseif type(payload) == "string" then
+		showCulturalInsight("Wawasan", payload)
+	end
 end)
 
 -- Ending from server
-RE_TriggerEnding.OnClientEvent:Connect(function(endingType, title, desc, skills, insights)
-	showEndingScreen(endingType, title, desc, skills, insights)
+RE_TriggerEnding.OnClientEvent:Connect(function(payload)
+	if type(payload) == "table" then
+		showEndingScreen(
+			payload.id or "ending",
+			payload.title or "Selesai",
+			payload.desc or "",
+			payload.skills,
+			payload.insights
+		)
+	end
 end)
 
 -- Level transition from server
