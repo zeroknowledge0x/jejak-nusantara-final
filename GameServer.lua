@@ -554,6 +554,8 @@ end
 ---------------------------------------------------------------------
 -- Player Action Handler
 ---------------------------------------------------------------------
+local handleNPCInteract  -- forward declaration (defined below)
+
 local ACTION_HANDLERS = {}
 
 ACTION_HANDLERS.Explore = function(player, data, payload)

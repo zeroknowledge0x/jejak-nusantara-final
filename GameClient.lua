@@ -50,6 +50,8 @@ local LEVEL_DISPLAY = {
 	Tempat_Bersejarah  = "Tempat Bersejarah Indonesia",
 }
 
+local levelKeysByIndex = { "Desa_Budaya", "Sanggar_Seni", "Pasar_Tradisional", "Tempat_Bersejarah" }
+
 local SKILL_LABELS = {
 	Observation           = "Observasi",
 	Communication         = "Komunikasi",
@@ -436,6 +438,7 @@ end)
 -- DIALOGUE SYSTEM
 ---------------------------------------------------------------------
 local dialogueActive = false
+local currentDialogueKey = nil  -- tracks which dialogue tree node is active
 local dialogueFrame = UI.create("Frame", {
 	Name = "Dialogue",
 	Size = UDim2.new(0.6, 0, 0, 0),
@@ -503,8 +506,9 @@ local function typewriterEffect(label, text, speed)
 	end
 end
 
-local function showDialogue(npcName, text, choices)
+local function showDialogue(npcName, text, choices, dialogueKey)
 	dialogueActive = true
+	currentDialogueKey = dialogueKey
 	dialogueFrame.Visible = true
 
 	-- Clear old choices
@@ -549,8 +553,8 @@ local function showDialogue(npcName, text, choices)
 			end)
 
 			btn.MouseButton1Click:Connect(function()
-				-- Send choice to server
-				RE_DialogueEvent:FireServer(choice.next, choice.skill or "")
+				-- Send current dialogue key + choice INDEX to server
+				RE_DialogueEvent:FireServer(currentDialogueKey, i)
 				dialogueActive = false
 				UI.tween(dialogueFrame, { Size = UDim2.new(0.6, 0, 0, 0) }, 0.25)
 				task.wait(0.3)
@@ -690,7 +694,7 @@ local function runAngklungGame(pattern, currentIndex, score, totalNotes)
 	if currentIndex > #pattern then
 		-- Game complete
 		angklungProgress.Text = "Selesai! Skor akhir: " .. score .. "/" .. totalNotes
-		RE_MiniGameResult:FireServer("angklung", score, totalNotes)
+		RE_MiniGameResult:FireServer("Angklung", score / (totalNotes * 10))
 		task.wait(2)
 		angklungFrame.Visible = false
 		angklungActive = false
@@ -850,7 +854,7 @@ local dirSymbols = { Atas = "↑", Kiri = "←", Kanan = "→", Bawah = "↓" }
 local function runTariGame(sequence, idx, score)
 	if idx > #sequence then
 		tariSequenceDisplay.Text = "Selesai! Skor: " .. score
-		RE_MiniGameResult:FireServer("tari_topeng", score, #sequence)
+		RE_MiniGameResult:FireServer("Tari", score / (#sequence * 10))
 		task.wait(2)
 		tariFrame.Visible = false
 		return
@@ -1030,7 +1034,7 @@ local function startTawarGame(itemName, minPrice, maxPrice, attempts)
 			won = true
 			tawarResultLabel.Text = "✓ Deal! Harga sepakat: Rp " .. string.format("%d", offer)
 			tawarResultLabel.TextColor3 = THEME.success
-			RE_MiniGameResult:FireServer("tawar_menawar", maxTries - tries + 1, maxTries)
+			RE_MiniGameResult:FireServer("TawarMenawar", (maxTries - tries + 1) / maxTries)
 			conn:Disconnect()
 			task.wait(2)
 			tawarFrame.Visible = false
@@ -1046,7 +1050,7 @@ local function startTawarGame(itemName, minPrice, maxPrice, attempts)
 			won = true -- prevent further clicks
 			tawarResultLabel.Text = "✗ Pedagang sudah bosan! Harga tetap Rp " .. string.format("%d", maxPrice)
 			tawarResultLabel.TextColor3 = THEME.danger
-			RE_MiniGameResult:FireServer("tawar_menawar", 0, maxTries)
+			RE_MiniGameResult:FireServer("TawarMenawar", 0)
 			conn:Disconnect()
 			task.wait(2)
 			tawarFrame.Visible = false
@@ -1120,7 +1124,7 @@ local function runPuzzleGame(questions, qIdx, score)
 	if qIdx > #questions then
 		puzzleQuestionLabel.Text = "Puzzle selesai!"
 		puzzleScoreLabel.Text = "Skor akhir: " .. score .. " / " .. (#questions * 10)
-		RE_MiniGameResult:FireServer("puzzle_sejarah", score, #questions * 10)
+		RE_MiniGameResult:FireServer("PuzzleSejarah", score / (#questions * 10))
 		task.wait(2.5)
 		puzzleFrame.Visible = false
 		return
@@ -1365,7 +1369,7 @@ local function showEndingScreen(endingType, title, desc, skills, insights)
 		local insLbl = UI.create("TextLabel", {
 			Size = UDim2.new(1, 0, 0, 24),
 			BackgroundTransparency = 1,
-			Text = "Wawasan budaya terkumpul: " .. #insights,
+			Text = "Wawasan budaya terkumpul: " .. tostring(insights),
 			TextColor3 = THEME.gold,
 			TextSize = 14,
 			Font = Enum.Font.GothamMedium,
@@ -1500,39 +1504,45 @@ local function updateHUD(data)
 	end
 
 	-- Update progress
-	if data.levelIndex and data.totalLevels then
-		local pct = data.levelIndex / data.totalLevels
+	if data.currentLevel then
+		local pct = data.currentLevel / #levelKeysByIndex
 		UI.tween(progressBar, { Size = UDim2.new(pct, 0, 1, 0) }, 0.5)
 		progressLabel.Text = math.floor(pct * 100) .. "%"
 	end
 
 	-- Update level title
-	if data.currentLevel then
-		currentLevel = data.currentLevel
-		levelLabel.Text = LEVEL_DISPLAY[data.currentLevel] or "Jejak Nusantara"
+	if data.levelName then
+		currentLevel = data.levelName
+		levelLabel.Text = LEVEL_DISPLAY[data.levelName] or "Jejak Nusantara"
 
 		-- Update map
-		if mapNodes[data.currentLevel] then
-			mapNodes[data.currentLevel].status.Text = "📍 Di sini"
-			mapNodes[data.currentLevel].status.TextColor3 = THEME.accent
+		if mapNodes[data.levelName] then
+			mapNodes[data.levelName].status.Text = "📍 Di sini"
+			mapNodes[data.levelName].status.TextColor3 = THEME.accent
 		end
 	end
 
 	-- Update completed levels on map
-	if data.completedLevels then
-		for _, lvl in ipairs(data.completedLevels) do
-			if mapNodes[lvl] then
-				mapNodes[lvl].status.Text = "✅ Selesai"
-				mapNodes[lvl].status.TextColor3 = THEME.success
+	if data.levelCompleted then
+		for idx, done in ipairs(data.levelCompleted) do
+			local key = levelKeysByIndex[idx]
+			if done and key and mapNodes[key] then
+				mapNodes[key].status.Text = "✅ Selesai"
+				mapNodes[key].status.TextColor3 = THEME.success
 			end
 		end
 	end
 
-	-- Unlock next level on map
-	if data.unlockedLevel and mapNodes[data.unlockedLevel] then
-		if mapNodes[data.unlockedLevel].status.Text == "🔒 Terkunci" then
-			mapNodes[data.unlockedLevel].status.Text = "🔓 Terbuka"
-			mapNodes[data.unlockedLevel].status.TextColor3 = THEME.warning
+	-- Unlock next levels on map
+	if data.levelsUnlocked then
+		for idx, unlocked in ipairs(data.levelsUnlocked) do
+			local key = levelKeysByIndex[idx]
+			if unlocked and key and mapNodes[key] then
+				if mapNodes[key].status.Text == "🔒 Terkunci" then
+					mapNodes[key].status.Text = "🔓 Terbuka"
+					mapNodes[key].status.TextColor3 = THEME.warning
+				end
+			end
 		end
 	end
 end
@@ -1578,14 +1588,34 @@ end)
 
 -- Dialogue from server
 RE_DialogueEvent.OnClientEvent:Connect(function(dlgKey, dlgStep)
+	if dlgKey == "_minigame_start" and type(dlgStep) == "table" then
+		-- Server signals to start a mini game
+		local gameName = dlgStep.game
+		if gameName == "Angklung" then
+			startAngklungGame(5)
+		elseif gameName == "Tari" then
+			startTariGame(6)
+		elseif gameName == "TawarMenawar" then
+			startTawarGame("Batik Tulis", 50000, 200000, 5)
+		elseif gameName == "PuzzleSejarah" then
+			startPuzzleGame({
+				{ question = "Candi Buddha terbesar di dunia adalah...", options = {"Borobudur", "Prambanan", "Mendut", "Sewu"}, answer = 1 },
+				{ question = "Batik diakui UNESCO tahun...", options = {"2005", "2009", "2012", "2015"}, answer = 2 },
+				{ question = "Rendang berasal dari daerah...", options = {"Jawa Barat", "Sumatera Barat", "Bali", "Sulawesi"}, answer = 2 },
+				{ question = "Proklamasi kemerdekaan Indonesia tahun...", options = {"1942", "1943", "1945", "1950"}, answer = 3 },
+			})
+		end
+		return
+	end
+
 	if type(dlgStep) == "table" then
 		local npcName = dlgStep.speaker or dlgKey or "NPC"
 		local text = dlgStep.text or dlgStep.message or ""
 		local choices = dlgStep.choices
-		showDialogue(npcName, text, choices)
+		showDialogue(npcName, text, choices, dlgKey)
 	elseif type(dlgStep) == "string" then
 		-- Simple text dialogue
-		showDialogue(dlgKey or "NPC", dlgStep, nil)
+		showDialogue(dlgKey or "NPC", dlgStep, nil, dlgKey)
 	end
 end)
 
@@ -1612,8 +1642,12 @@ RE_TriggerEnding.OnClientEvent:Connect(function(payload)
 end)
 
 -- Level transition from server
-RE_LevelTransition.OnClientEvent:Connect(function(levelName)
-	showLevelTransition(levelName)
+RE_LevelTransition.OnClientEvent:Connect(function(payload)
+	if type(payload) == "table" then
+		showLevelTransition(payload.name or LEVEL_DISPLAY[levelKeysByIndex[payload.level]] or "")
+	elseif type(payload) == "string" then
+		showLevelTransition(payload)
+	end
 end)
 
 -- Journal update from server
