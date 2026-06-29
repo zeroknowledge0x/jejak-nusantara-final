@@ -31,9 +31,17 @@ local RS = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
 
 -- ============================================
--- DATA STORE
+-- DATA STORE (lazy init — won't crash if API disabled)
 -- ============================================
-local dataStore = DataStoreService:GetDataStore("JejakNusantara_v4")
+local dataStore = nil
+local function getDataStore()
+    if dataStore then return dataStore end
+    local ok, ds = pcall(function()
+        return DataStoreService:GetDataStore("JejakNusantara_v4")
+    end)
+    if ok then dataStore = ds end
+    return dataStore
+end
 
 -- ============================================
 -- CREATE REMOTE EVENTS
@@ -352,7 +360,7 @@ end
 
 local function loadPlayerData(player)
     local success, data = pcall(function()
-        return dataStore:GetAsync("player_" .. player.UserId)
+        return getDataStore():GetAsync("player_" .. player.UserId)
     end)
     if success and data then
         -- Merge with defaults so new fields are present
@@ -376,7 +384,7 @@ local function savePlayerData(player)
     local data = playerData[player.UserId]
     if not data then return end
     local success, err = pcall(function()
-        dataStore:SetAsync("player_" .. player.UserId, data)
+        getDataStore():SetAsync("player_" .. player.UserId, data)
     end)
     if success then
         print("[DataStore] Saved: " .. player.Name)
@@ -995,7 +1003,11 @@ end)
 -- ============================================
 -- CREATE WORLD
 -- ============================================
-createWorld()
+local ok, err = pcall(createWorld)
+if not ok then
+    warn("⚠️ createWorld error: " .. tostring(err))
+    warn("⚠️ Game will still run but world may be incomplete")
+end
 
 print("✅ All systems ready!")
 print("🎮 ============================================")
