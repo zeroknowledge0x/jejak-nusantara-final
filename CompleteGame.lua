@@ -552,34 +552,53 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
     local faceGui = Instance.new("SurfaceGui")
     faceGui.Name = "FaceGui"
     faceGui.Face = Enum.NormalId.Front
+    faceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+    faceGui.PixelsPerStud = 50
     faceGui.Parent = head
 
-    -- Left eye
+    -- Left eye (bigger, more visible)
     local leftEye = Instance.new("Frame")
     leftEye.Name = "LeftEye"
-    leftEye.Size = UDim2.new(0.15, 0, 0.15, 0)
-    leftEye.Position = UDim2.new(0.25, 0, 0.3, 0)
-    leftEye.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    leftEye.Size = UDim2.new(0.2, 0, 0.2, 0)
+    leftEye.Position = UDim2.new(0.2, 0, 0.25, 0)
+    leftEye.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     leftEye.BorderSizePixel = 0
     leftEye.Parent = faceGui
 
-    -- Right eye
+    -- Right eye (bigger, more visible)
     local rightEye = Instance.new("Frame")
     rightEye.Name = "RightEye"
-    rightEye.Size = UDim2.new(0.15, 0, 0.15, 0)
-    rightEye.Position = UDim2.new(0.6, 0, 0.3, 0)
-    rightEye.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    rightEye.Size = UDim2.new(0.2, 0, 0.2, 0)
+    rightEye.Position = UDim2.new(0.6, 0, 0.25, 0)
+    rightEye.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     rightEye.BorderSizePixel = 0
     rightEye.Parent = faceGui
 
-    -- Mouth (smile)
+    -- Mouth (smile, bigger)
     local mouth = Instance.new("Frame")
     mouth.Name = "Mouth"
-    mouth.Size = UDim2.new(0.3, 0, 0.08, 0)
-    mouth.Position = UDim2.new(0.35, 0, 0.6, 0)
-    mouth.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+    mouth.Size = UDim2.new(0.4, 0, 0.1, 0)
+    mouth.Position = UDim2.new(0.3, 0, 0.6, 0)
+    mouth.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
     mouth.BorderSizePixel = 0
     mouth.Parent = faceGui
+
+    -- Eyebrows for more expression
+    local leftBrow = Instance.new("Frame")
+    leftBrow.Name = "LeftBrow"
+    leftBrow.Size = UDim2.new(0.2, 0, 0.05, 0)
+    leftBrow.Position = UDim2.new(0.2, 0, 0.18, 0)
+    leftBrow.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    leftBrow.BorderSizePixel = 0
+    leftBrow.Parent = faceGui
+
+    local rightBrow = Instance.new("Frame")
+    rightBrow.Name = "RightBrow"
+    rightBrow.Size = UDim2.new(0.2, 0, 0.05, 0)
+    rightBrow.Position = UDim2.new(0.6, 0, 0.18, 0)
+    rightBrow.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    rightBrow.BorderSizePixel = 0
+    rightBrow.Parent = faceGui
 
     -- Hair for Dosen (special case)
     if name == "Pak Dosen" then
@@ -718,10 +737,19 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
 
     prompt.Triggered:Connect(function(player)
         -- Bug #1 fix: prevent re-trigger while in dialogue
-        if playerActiveNPC[player.UserId] then return end
+        if playerActiveNPC[player.UserId] then 
+            print("[NPC] Player " .. player.Name .. " already in dialogue with " .. name)
+            return 
+        end
 
         local data = getPlayerData(player)
+        if not data then
+            warn("[NPC] ERROR: No player data for " .. player.Name)
+            return
+        end
+        
         data.talkCount = (data.talkCount or 0) + 1
+        print("[NPC] " .. player.Name .. " talking to " .. name .. " (talk #" .. data.talkCount .. ")")
 
         -- Bug #1 fix: track active NPC
         playerActiveNPC[player.UserId] = dialogueId
@@ -732,6 +760,11 @@ local function createNPC(name, position, dialogueId, bodyColor, shirtColor, pant
             -- Send full dialogue table + dialogueId so client can navigate
             RS.DialogueStart:FireClient(player, dialogue, dialogueId)
             addJournalEntry(player, "💬 Berbicara dengan " .. dialogue.name)
+            print("[NPC] Dialogue started: " .. dialogueId)
+        else
+            warn("[NPC] ERROR: No dialogue found for " .. dialogueId)
+            playerActiveNPC[player.UserId] = nil
+            playerDialogueLine[player.UserId] = nil
         end
     end)
 
@@ -791,16 +824,24 @@ local function createPortal(name, position, destination, color, label, quizId)
 
     prompt.Triggered:Connect(function(player)
         local data = getPlayerData(player)
+        if not data then
+            warn("[Portal] ERROR: No player data for " .. player.Name)
+            return
+        end
+
+        print("[Portal] " .. player.Name .. " trying to enter " .. name .. " (quiz: " .. quizId .. ")")
 
         -- Level gating: check if portal is unlocked
         if not data.unlockedPortals[quizId] then
             RS.ShowNotification:FireClient(player, "🔒 Portal ini belum terbuka! Selesaikan quiz sebelumnya.")
+            print("[Portal] Portal locked for " .. player.Name)
             return
         end
 
         -- Already completed?
         if data.completedQuizzes[quizId] then
             RS.ShowNotification:FireClient(player, "✅ Quiz ini sudah diselesaikan!")
+            print("[Portal] Quiz already completed by " .. player.Name)
             return
         end
 
@@ -810,6 +851,7 @@ local function createPortal(name, position, destination, color, label, quizId)
             local hrp2 = character:FindFirstChild("HumanoidRootPart")
             if hrp2 then
                 hrp2.CFrame = CFrame.new(destination)
+                print("[Portal] Teleported " .. player.Name .. " to " .. tostring(destination))
             end
         end
 
@@ -818,7 +860,9 @@ local function createPortal(name, position, destination, color, label, quizId)
         if quizData then
             RS.QuizStart:FireClient(player, quizData, quizId, 1)
             addJournalEntry(player, "📝 Memasuki quiz: " .. quizData.title)
-            print("[Portal] " .. player.Name .. " entered " .. name)
+            print("[Portal] Quiz started: " .. quizId .. " for " .. player.Name)
+        else
+            warn("[Portal] ERROR: No quiz data for " .. quizId)
         end
     end)
 
@@ -2354,6 +2398,8 @@ end
 -- DIALOGUE HANDLER (Bug #3 fix: proper state machine)
 -- ============================================
 RS.DialogueChoice.OnServerEvent:Connect(function(player, choiceIndex)
+    print("[Dialogue] " .. player.Name .. " chose option " .. tostring(choiceIndex))
+    
     local dialogueId = playerActiveNPC[player.UserId]
     if not dialogueId then
         warn("[Dialogue] No active NPC for " .. player.Name)
@@ -2378,6 +2424,8 @@ RS.DialogueChoice.OnServerEvent:Connect(function(player, choiceIndex)
         warn("[Dialogue] No choice at index " .. tostring(choiceIndex))
         return
     end
+
+    print("[Dialogue] Choice: " .. (choice.text or "no text") .. " -> " .. (choice.next or choice.action or "end"))
 
     if choice.action == "end" then
         -- End dialogue
@@ -2410,6 +2458,8 @@ end)
 -- QUIZ HANDLER (Bug #2 fix: use quizId param)
 -- ============================================
 RS.QuizAnswer.OnServerEvent:Connect(function(player, questionIndex, answerIndex, quizId)
+    print("[Quiz] " .. player.Name .. " answered Q" .. tostring(questionIndex) .. " with " .. tostring(answerIndex) .. " for quiz " .. tostring(quizId))
+    
     local quiz = QUIZZES[quizId]
     if not quiz then
         warn("[Quiz] Invalid quizId: " .. tostring(quizId))
@@ -2423,6 +2473,8 @@ RS.QuizAnswer.OnServerEvent:Connect(function(player, questionIndex, answerIndex,
     end
 
     local isCorrect = (answerIndex == question.correct)
+    print("[Quiz] Answer " .. (isCorrect and "CORRECT" or "WRONG") .. " (expected " .. tostring(question.correct) .. ")")
+    
     local results = {
         quizId = quizId,
         questionIndex = questionIndex,
