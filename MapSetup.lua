@@ -83,7 +83,7 @@ local LEVEL_STYLES = {
 	},
 	Tempat_Bersejarah = {
 		groundColor = c3(140, 130, 100),  groundMat = MAT.Slate,
-		wallColor   = c3(150, 140, 110),  wallMat   = MAT.Stone,
+		wallColor   = c3(150, 140, 110),  wallMat   = MAT.Slate,
 		roofColor   = c3(100, 90, 70),    roofMat   = MAT.Basalt,
 		accentColor = c3(180, 160, 80),
 		waterColor  = c3(30, 100, 150),   waterMat  = MAT.Water,
