@@ -614,16 +614,37 @@ ACTION_HANDLERS.DialogueChoice = function(player, data, payload)
 end
 
 ACTION_HANDLERS.PlayMiniGame = function(player, data, payload)
-	local gameKey = payload.game
-	local config  = MiniGameConfig[gameKey]
+	local key = payload and payload.game or ""
+	local config = MiniGameConfig[key]
 	if not config then return end
 
 	-- Initialize tracking
-	if not data.miniGames[gameKey] then
-		data.miniGames[gameKey] = { best_score = 0, attempts = 0, passed = false }
+	if not data.miniGames[key] then
+		data.miniGames[key] = { best_score = 0, attempts = 0, passed = false }
 	end
-	local mg = data.miniGames[gameKey]
+	local mg = data.miniGames[key]
 	mg.attempts = mg.attempts + 1
+end
+
+-- NPC interaction from MapSetup (talk_npc) or GameClient (interact_npc)
+ACTION_HANDLERS.talk_npc = function(player, data, payload)
+	local npcName = payload
+	if not npcName then return end
+	for npcKey, npc in pairs(NPCDefinitions) do
+		if npc.name == npcName then
+			handleNPCInteract(player, npcKey)
+			return
+		end
+	end
+end
+
+ACTION_HANDLERS.interact_npc = function(player, data, payload)
+	for npcKey, npc in pairs(NPCDefinitions) do
+		if npc.level == data.levelName or npc.level == "All" then
+			handleNPCInteract(player, npcKey)
+			return
+		end
+	end
 end
 
 ---------------------------------------------------------------------
