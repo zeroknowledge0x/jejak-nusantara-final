@@ -33,6 +33,25 @@ local playerGui = player:WaitForChild("PlayerGui")
 local currentDialogue = nil
 local currentQuiz = nil
 local currentQuizId = nil -- Bug #2 fix: track quizId from server
+
+-- ============================================
+-- WAIT FOR REMOTES (created by server)
+-- ============================================
+local RE_GameStart        = RS:WaitForChild("GameStart", 10)
+local RE_DialogueStart    = RS:WaitForChild("DialogueStart", 10)
+local RE_DialogueEnd      = RS:WaitForChild("DialogueEnd", 10)
+local RE_DialogueChoice   = RS:WaitForChild("DialogueChoice", 10)
+local RE_QuizStart        = RS:WaitForChild("QuizStart", 10)
+local RE_QuizAnswer       = RS:WaitForChild("QuizAnswer", 10)
+local RE_QuizEnd          = RS:WaitForChild("QuizEnd", 10)
+local RE_ShowNotification = RS:WaitForChild("ShowNotification", 10)
+local RE_StateUpdate      = RS:WaitForChild("StateUpdate", 10)
+local RF_GetPlayerData    = RS:WaitForChild("GetPlayerData", 10)
+local RE_JournalUpdate    = RS:WaitForChild("JournalUpdate", 10)
+local RE_EndingTriggered  = RS:WaitForChild("EndingTriggered", 10)
+local RE_LevelUnlocked    = RS:WaitForChild("LevelUnlocked", 10)
+
+print("✅ Remotes ready!")
 local currentQuestionIndex = 1
 local selectedAnswer = nil
 local journalEntries = {}
@@ -494,7 +513,7 @@ local function typewriterEffect(textLabel, fullText)
 end
 
 local function updateHUD()
-    local data = RS.GetPlayerData:InvokeServer()
+    local data = RF_GetPlayerData:InvokeServer()
     if data then
         levelLabel.Text = "Level " .. (data.level or 1)
         local xpPct = (data.xp or 0) / (data.xpToNext or 1000)
@@ -584,11 +603,11 @@ local function showDialogueLine(dialogueData, lineIndex)
             btn.MouseButton1Click:Connect(function()
                 if choice.action == "end" then
                     -- Tell server to end dialogue
-                    RS.DialogueChoice:FireServer(i)
+                    RE_DialogueChoice:FireServer(i)
                 elseif choice.next then
                     -- Bug #4 fix: tell server which choice we picked
                     -- Server will send back next line via DialogueStart
-                    RS.DialogueChoice:FireServer(i)
+                    RE_DialogueChoice:FireServer(i)
                 end
             end)
         end
@@ -672,7 +691,7 @@ local function showQuiz(quizData, quizId, questionIndex)
 
             -- Bug #2 fix: send server-sent quizId
             task.delay(1.5, function()
-                RS.QuizAnswer:FireServer(currentQuestionIndex, i, currentQuizId)
+                RE_QuizAnswer:FireServer(currentQuestionIndex, i, currentQuizId)
             end)
         end)
     end
@@ -691,7 +710,7 @@ local function showEnding(endingId, endingData)
     endingDesc.Text = endingData.description
 
     -- Stats
-    local data = RS.GetPlayerData:InvokeServer()
+    local data = RF_GetPlayerData:InvokeServer()
     if data then
         local quizCount = 0
         if data.completedQuizzes then
@@ -720,12 +739,12 @@ end
 startButton.MouseButton1Click:Connect(function()
     mainMenu.Visible = false
     hud.Visible = true
-    RS.GameStart:FireServer()
+    RE_GameStart:FireServer()
     updateHUD()
 end)
 
 -- Dialogue Start (Bug #1 fix: server now sends dialogueId too)
-RS.DialogueStart.OnClientEvent:Connect(function(data, dialogueId)
+RE_DialogueStart.OnClientEvent:Connect(function(data, dialogueId)
     local success, err = pcall(function()
         showDialogue(data, dialogueId)
     end)
@@ -735,7 +754,7 @@ RS.DialogueStart.OnClientEvent:Connect(function(data, dialogueId)
 end)
 
 -- Dialogue End
-RS.DialogueEnd.OnClientEvent:Connect(function()
+RE_DialogueEnd.OnClientEvent:Connect(function()
     dialogueFrame.Visible = false
     clearChoices()
     currentDialogue = nil
@@ -743,12 +762,12 @@ RS.DialogueEnd.OnClientEvent:Connect(function()
 end)
 
 -- Quiz Start (Bug #2 fix: receives quizId from server)
-RS.QuizStart.OnClientEvent:Connect(function(quizData, quizId, questionIndex)
+RE_QuizStart.OnClientEvent:Connect(function(quizData, quizId, questionIndex)
     showQuiz(quizData, quizId, questionIndex)
 end)
 
 -- Quiz End
-RS.QuizEnd.OnClientEvent:Connect(function(quizId, results)
+RE_QuizEnd.OnClientEvent:Connect(function(quizId, results)
     quizFrame.Visible = false
     currentQuiz = nil
     currentQuizId = nil
@@ -757,27 +776,27 @@ RS.QuizEnd.OnClientEvent:Connect(function(quizId, results)
 end)
 
 -- Notification
-RS.ShowNotification.OnClientEvent:Connect(function(text)
+RE_ShowNotification.OnClientEvent:Connect(function(text)
     showNotification(text)
 end)
 
 -- State Update
-RS.StateUpdate.OnClientEvent:Connect(function(key, value)
+RE_StateUpdate.OnClientEvent:Connect(function(key, value)
     updateHUD()
 end)
 
 -- Journal Update
-RS.JournalUpdate.OnClientEvent:Connect(function(entry)
+RE_JournalUpdate.OnClientEvent:Connect(function(entry)
     addJournalEntry(entry)
 end)
 
 -- Level Unlocked
-RS.LevelUnlocked.OnClientEvent:Connect(function(levelId)
+RE_LevelUnlocked.OnClientEvent:Connect(function(levelId)
     showNotification("🔓 Wilayah baru terbuka!")
 end)
 
 -- Ending Triggered
-RS.EndingTriggered.OnClientEvent:Connect(function(endingId, endingData)
+RE_EndingTriggered.OnClientEvent:Connect(function(endingId, endingData)
     showEnding(endingId, endingData)
 end)
 
