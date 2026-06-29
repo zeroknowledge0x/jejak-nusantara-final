@@ -725,105 +725,614 @@ end
 -- ============================================
 -- WORLD CREATION
 -- ============================================
+
+-- Helper: build a simple house/building
+local function buildHouse(parent, pos, w, h, d, wallColor, roofColor, name)
+    local model = Instance.new("Model")
+    model.Name = name or "Building"
+
+    -- Floor
+    local floor = Instance.new("Part")
+    floor.Name = "Floor"
+    floor.Size = Vector3.new(w, 0.5, d)
+    floor.Position = pos + Vector3.new(0, 0.25, 0)
+    floor.Anchored = true
+    floor.Color = Color3.fromRGB(120, 90, 50)
+    floor.Material = Enum.Material.Wood
+    floor.Parent = model
+
+    -- 4 Walls
+    local walls = {
+        {Vector3.new(0, h/2, d/2), Vector3.new(w, h, 1)},   -- Front
+        {Vector3.new(0, h/2, -d/2), Vector3.new(w, h, 1)},  -- Back
+        {Vector3.new(-w/2, h/2, 0), Vector3.new(1, h, d)},  -- Left
+        {Vector3.new(w/2, h/2, 0), Vector3.new(1, h, d)},   -- Right
+    }
+    for i, wdata in ipairs(walls) do
+        local wall = Instance.new("Part")
+        wall.Name = "Wall" .. i
+        wall.Size = wdata[2]
+        wall.Position = pos + wdata[1]
+        wall.Anchored = true
+        wall.Color = wallColor
+        wall.Material = Enum.Material.Wood
+        wall.Parent = model
+    end
+
+    -- Door opening (front wall, remove middle)
+    local door = Instance.new("Part")
+    door.Name = "Door"
+    door.Size = Vector3.new(3, 5, 1.2)
+    door.Position = pos + Vector3.new(0, 2.5, d/2)
+    door.Anchored = true
+    door.Color = Color3.fromRGB(60, 35, 15)
+    door.Material = Enum.Material.Wood
+    door.Transparency = 0.3
+    door.Parent = model
+
+    -- Roof
+    local roof = Instance.new("Part")
+    roof.Name = "Roof"
+    roof.Size = Vector3.new(w + 3, 1, d + 3)
+    roof.Position = pos + Vector3.new(0, h + 0.5, 0)
+    roof.Anchored = true
+    roof.Color = roofColor
+    roof.Material = Enum.Material.Slate
+    roof.Parent = model
+
+    -- Roof peak
+    local peak = Instance.new("Part")
+    peak.Name = "RoofPeak"
+    peak.Size = Vector3.new(w * 0.3, 2, d * 0.3)
+    peak.Position = pos + Vector3.new(0, h + 2, 0)
+    peak.Anchored = true
+    peak.Color = roofColor
+    peak.Material = Enum.Material.Slate
+    peak.Parent = model
+
+    model.Parent = parent or workspace
+    return model
+end
+
+-- Helper: build a tree
+local function buildTree(parent, pos, height)
+    local h = height or math.random(8, 14)
+    local trunk = Instance.new("Part")
+    trunk.Name = "Trunk"
+    trunk.Size = Vector3.new(1.5, h, 1.5)
+    trunk.Position = pos + Vector3.new(0, h/2, 0)
+    trunk.Anchored = true
+    trunk.Color = Color3.fromRGB(100, 70, 30)
+    trunk.Material = Enum.Material.Wood
+    trunk.Parent = parent
+
+    for i = 0, 2 do
+        local s = 8 - i * 2
+        local canopy = Instance.new("Part")
+        canopy.Name = "Canopy" .. i
+        canopy.Size = Vector3.new(s, 3, s)
+        canopy.Position = pos + Vector3.new(0, h + i * 2, 0)
+        canopy.Anchored = true
+        canopy.Color = Color3.fromRGB(40 + i*10, 120 + i*20, 40)
+        canopy.Material = Enum.Material.Grass
+        canopy.Parent = parent
+    end
+end
+
+-- Helper: build water pond
+local function buildWater(parent, pos, size)
+    local water = Instance.new("Part")
+    water.Name = "Water"
+    water.Size = size or Vector3.new(20, 0.3, 20)
+    water.Position = pos
+    water.Anchored = true
+    water.Color = Color3.fromRGB(50, 130, 200)
+    water.Material = Enum.Material.Glass
+    water.Transparency = 0.4
+    water.CanCollide = false
+    water.Parent = parent
+end
+
+-- Helper: build a candi/temple (tiered structure)
+local function buildTemple(parent, pos, height)
+    local h = height or 12
+    local model = Instance.new("Model")
+    model.Name = "Candi"
+
+    for i = 0, 3 do
+        local s = 14 - i * 3
+        local tier = Instance.new("Part")
+        tier.Name = "Tier" .. i
+        tier.Size = Vector3.new(s, 3, s)
+        tier.Position = pos + Vector3.new(0, i * 3 + 1.5, 0)
+        tier.Anchored = true
+        tier.Color = Color3.fromRGB(180, 170, 140)
+        tier.Material = Enum.Material.Slate
+        tier.Parent = model
+
+        -- Stairs on each tier
+        if i < 3 then
+            local stair = Instance.new("Part")
+            stair.Name = "Stairs" .. i
+            stair.Size = Vector3.new(3, 1, 3)
+            stair.Position = pos + Vector3.new(0, i * 3 + 0.5, s/2 + 1)
+            stair.Anchored = true
+            stair.Color = Color3.fromRGB(200, 180, 100)
+            stair.Material = Enum.Material.SmoothPlastic
+            stair.Parent = model
+        end
+    end
+
+    -- Top stupa
+    local stupa = Instance.new("Part")
+    stupa.Name = "Stupa"
+    stupa.Size = Vector3.new(4, 6, 4)
+    stupa.Position = pos + Vector3.new(0, 15, 0)
+    stupa.Anchored = true
+    stupa.Color = Color3.fromRGB(200, 180, 100)
+    stupa.Material = Enum.Material.Neon
+    stupa.Transparency = 0.2
+    stupa.Shape = Enum.PartType.Ball
+    stupa.Parent = model
+
+    model.Parent = parent or workspace
+end
+
+-- Helper: build a gate/portal frame
+local function buildPortalFrame(parent, pos, color)
+    local model = Instance.new("Model")
+    model.Name = "PortalFrame"
+
+    -- Left pillar
+    local left = Instance.new("Part")
+    left.Name = "LeftPillar"
+    left.Size = Vector3.new(2, 14, 2)
+    left.Position = pos + Vector3.new(-5, 7, 0)
+    left.Anchored = true
+    left.Color = Color3.fromRGB(139, 90, 43)
+    left.Material = Enum.Material.Wood
+    left.Parent = model
+
+    -- Right pillar
+    local right = Instance.new("Part")
+    right.Name = "RightPillar"
+    right.Size = Vector3.new(2, 14, 2)
+    right.Position = pos + Vector3.new(5, 7, 0)
+    right.Anchored = true
+    right.Color = Color3.fromRGB(139, 90, 43)
+    right.Material = Enum.Material.Wood
+    right.Parent = model
+
+    -- Top beam
+    local beam = Instance.new("Part")
+    beam.Name = "TopBeam"
+    beam.Size = Vector3.new(12, 2, 2)
+    beam.Position = pos + Vector3.new(0, 14, 0)
+    beam.Anchored = true
+    beam.Color = Color3.fromRGB(139, 90, 43)
+    beam.Material = Enum.Material.Wood
+    beam.Parent = model
+
+    -- Portal glow
+    local glow = Instance.new("Part")
+    glow.Name = "Glow"
+    glow.Size = Vector3.new(8, 12, 1)
+    glow.Position = pos + Vector3.new(0, 7, 0)
+    glow.Anchored = true
+    glow.CanCollide = false
+    glow.Color = color
+    glow.Material = Enum.Material.Neon
+    glow.Transparency = 0.3
+    glow.Parent = model
+
+    model.Parent = parent or workspace
+end
+
+-- Helper: build market stall
+local function buildStall(parent, pos, roofColor, name)
+    local model = Instance.new("Model")
+    model.Name = name or "Stall"
+
+    -- Table
+    local table_ = Instance.new("Part")
+    table_.Name = "Table"
+    table_.Size = Vector3.new(8, 1, 5)
+    table_.Position = pos + Vector3.new(0, 2, 0)
+    table_.Anchored = true
+    table_.Color = Color3.fromRGB(140, 100, 50)
+    table_.Material = Enum.Material.Wood
+    table_.Parent = model
+
+    -- Roof
+    local roof = Instance.new("Part")
+    roof.Name = "Roof"
+    roof.Size = Vector3.new(10, 0.5, 7)
+    roof.Position = pos + Vector3.new(0, 5, 0)
+    roof.Anchored = true
+    roof.Color = roofColor
+    roof.Material = Enum.Material.Slate
+    roof.Parent = model
+
+    -- 4 Poles
+    for _, xOff in ipairs({-4, 4}) do
+        for _, zOff in ipairs({-2.5, 2.5}) do
+            local pole = Instance.new("Part")
+            pole.Name = "Pole"
+            pole.Size = Vector3.new(0.5, 4, 0.5)
+            pole.Position = pos + Vector3.new(xOff, 3.5, zOff)
+            pole.Anchored = true
+            pole.Color = Color3.fromRGB(120, 80, 30)
+            pole.Material = Enum.Material.Wood
+            pole.Parent = model
+        end
+    end
+
+    model.Parent = parent or workspace
+end
+
+-- Helper: add a floating region label
+local function addLabel(text, pos)
+    local adornee = Instance.new("Part")
+    adornee.Name = "Label_" .. text
+    adornee.Size = Vector3.new(1, 1, 1)
+    adornee.Position = pos
+    adornee.Anchored = true
+    adornee.CanCollide = false
+    adornee.Transparency = 1
+    adornee.Parent = workspace
+
+    local bb = Instance.new("BillboardGui")
+    bb.Size = UDim2.new(0, 300, 0, 60)
+    bb.StudsOffset = Vector3.new(0, 0, 0)
+    bb.AlwaysOnTop = false
+    bb.Adornee = adornee
+    bb.Parent = workspace
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 0.5
+    lbl.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lbl.Text = text
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.GothamBold
+    lbl.Parent = bb
+end
+
 local function createWorld()
     print("🌍 Creating world...")
 
-    -- Ground
+    -- ==========================================
+    -- GROUND PLATFORMS (5 areas)
+    -- ==========================================
+    -- Main ground (green grass)
     local ground = Instance.new("Part")
     ground.Name = "Ground"
-    ground.Size = Vector3.new(400, 1, 400)
+    ground.Size = Vector3.new(500, 1, 500)
     ground.Position = Vector3.new(0, 0.5, 0)
     ground.Anchored = true
-    ground.Color = Color3.fromRGB(100, 180, 80)
+    ground.Color = Color3.fromRGB(90, 160, 70)
     ground.Material = Enum.Material.Grass
     ground.Parent = workspace
 
-    -- Spawn point
+    -- Kampus platform (white stone)
+    local kampus = Instance.new("Part")
+    kampus.Name = "KampusPlatform"
+    kampus.Size = Vector3.new(60, 1, 60)
+    kampus.Position = Vector3.new(0, 0.5, 0)
+    kampus.Anchored = true
+    kampus.Color = Color3.fromRGB(220, 220, 210)
+    kampus.Material = Enum.Material.Concrete
+    kampus.Parent = workspace
+
+    -- Jawa platform (warm sand)
+    local jawaP = Instance.new("Part")
+    jawaP.Name = "JawaPlatform"
+    jawaP.Size = Vector3.new(80, 1, 80)
+    jawaP.Position = Vector3.new(-120, 0.5, -120)
+    jawaP.Anchored = true
+    jawaP.Color = Color3.fromRGB(180, 150, 100)
+    jawaP.Material = Enum.Material.Sand
+    jawaP.Parent = workspace
+
+    -- Sumatra platform (dark earth)
+    local sumatraP = Instance.new("Part")
+    sumatraP.Name = "SumatraPlatform"
+    sumatraP.Size = Vector3.new(80, 1, 80)
+    sumatraP.Position = Vector3.new(120, 0.5, -120)
+    sumatraP.Anchored = true
+    sumatraP.Color = Color3.fromRGB(140, 120, 80)
+    sumatraP.Material = Enum.Material.Slate
+    sumatraP.Parent = workspace
+
+    -- Bali platform (light stone)
+    local baliP = Instance.new("Part")
+    baliP.Name = "BaliPlatform"
+    baliP.Size = Vector3.new(80, 1, 80)
+    baliP.Position = Vector3.new(-120, 0.5, 120)
+    baliP.Anchored = true
+    baliP.Color = Color3.fromRGB(200, 190, 170)
+    baliP.Material = Enum.Material.Limestone
+    baliP.Parent = workspace
+
+    -- Papua platform (dark green)
+    local papuaP = Instance.new("Part")
+    papuaP.Name = "PapuaPlatform"
+    papuaP.Size = Vector3.new(80, 1, 80)
+    papuaP.Position = Vector3.new(120, 0.5, 120)
+    papuaP.Anchored = true
+    papuaP.Color = Color3.fromRGB(60, 100, 50)
+    papuaP.Material = Enum.Material.Grass
+    papuaP.Parent = workspace
+
+    -- ==========================================
+    -- PATHS connecting areas
+    -- ==========================================
+    local paths = {
+        {Vector3.new(0, 0.6, -30), Vector3.new(60, 0.3, 6)},   -- Kampus → Jawa
+        {Vector3.new(30, 0.6, 0), Vector3.new(6, 0.3, 60)},    -- Kampus → Sumatra (right)
+        {Vector3.new(-30, 0.6, 0), Vector3.new(6, 0.3, 60)},   -- Kampus → Bali (left)
+        {Vector3.new(0, 0.6, 30), Vector3.new(60, 0.3, 6)},    -- Kampus → Papua
+    }
+    for i, pdata in ipairs(paths) do
+        local path = Instance.new("Part")
+        path.Name = "Path" .. i
+        path.Size = pdata[2]
+        path.Position = pdata[1]
+        path.Anchored = true
+        path.Color = Color3.fromRGB(180, 160, 120)
+        path.Material = Enum.Material.Cobblestone
+        path.Parent = workspace
+    end
+
+    -- ==========================================
+    -- KAMPUS AREA (spawn)
+    -- ==========================================
+    -- Main building
+    buildHouse(workspace, Vector3.new(0, 0, -15), 20, 10, 14,
+        Color3.fromRGB(200, 190, 170), Color3.fromRGB(150, 60, 30), "Gedung_Kampus")
+
+    -- Welcome sign
+    local sign = Instance.new("Part")
+    sign.Name = "WelcomeSign"
+    sign.Size = Vector3.new(14, 3, 0.5)
+    sign.Position = Vector3.new(0, 8, 0)
+    sign.Anchored = true
+    sign.Color = Color3.fromRGB(60, 40, 20)
+    sign.Material = Enum.Material.Wood
+    sign.Parent = workspace
+
+    local signGui = Instance.new("SurfaceGui")
+    signGui.Face = Enum.NormalId.Front
+    signGui.Parent = sign
+    local signTxt = Instance.new("TextLabel")
+    signTxt.Size = UDim2.new(1, 0, 1, 0)
+    signTxt.BackgroundTransparency = 1
+    signTxt.Text = "🇮🇩 JEJAK NUSANTARA 🇮🇩\nPetualangan Budaya Indonesia"
+    signTxt.TextColor3 = Color3.fromRGB(255, 248, 230)
+    signTxt.TextScaled = true
+    signTxt.Font = Enum.Font.GothamBold
+    signTxt.Parent = signGui
+
+    -- Spawn
     local spawn = Instance.new("SpawnLocation")
     spawn.Name = "SpawnPoint"
     spawn.Size = Vector3.new(10, 1, 10)
-    spawn.Position = Vector3.new(0, 1, 0)
+    spawn.Position = Vector3.new(0, 1, 8)
     spawn.Anchored = true
-    spawn.Color = Color3.fromRGB(200, 200, 200)
-    spawn.Material = Enum.Material.SmoothPlastic
+    spawn.Color = Color3.fromRGB(218, 165, 32)
+    spawn.Material = Enum.Material.Neon
+    spawn.Transparency = 0.3
     spawn.Parent = workspace
 
-    -- Trees
-    local treePositions = {
-        Vector3.new(-20, 0, -20), Vector3.new(20, 0, -20),
-        Vector3.new(-20, 0, 20), Vector3.new(20, 0, 20),
-        Vector3.new(-60, 0, -60), Vector3.new(60, 0, -60),
-        Vector3.new(-60, 0, 60), Vector3.new(60, 0, 60),
-    }
+    -- Kampus trees
+    for _, tpos in ipairs({
+        Vector3.new(-25, 0, -25), Vector3.new(25, 0, -25),
+        Vector3.new(-25, 0, 25), Vector3.new(25, 0, 25),
+    }) do buildTree(workspace, tpos, 10) end
 
-    for _, pos in ipairs(treePositions) do
-        local trunk = Instance.new("Part")
-        trunk.Name = "Trunk"
-        trunk.Size = Vector3.new(2, 8, 2)
-        trunk.Position = pos + Vector3.new(0, 4, 0)
-        trunk.Anchored = true
-        trunk.Color = Color3.fromRGB(139, 90, 43)
-        trunk.Material = Enum.Material.Wood
-        trunk.Parent = workspace
+    -- ==========================================
+    -- JAWA AREA (Rumah Joglo + Gamelan)
+    -- ==========================================
+    -- Rumah Joglo (traditional Javanese house)
+    buildHouse(workspace, Vector3.new(-130, 0, -140), 18, 10, 14,
+        Color3.fromRGB(160, 120, 60), Color3.fromRGB(100, 50, 20), "Rumah_Joglo")
 
-        local leaves = Instance.new("Part")
-        leaves.Name = "Leaves"
-        leaves.Size = Vector3.new(8, 6, 8)
-        leaves.Position = pos + Vector3.new(0, 10, 0)
-        leaves.Anchored = true
-        leaves.Color = Color3.fromRGB(50, 150, 50)
-        leaves.Material = Enum.Material.Grass
-        leaves.Parent = workspace
-    end
+    -- Pendopo (open pavilion)
+    buildHouse(workspace, Vector3.new(-110, 0, -120), 14, 8, 14,
+        Color3.fromRGB(180, 140, 80), Color3.fromRGB(120, 60, 25), "Pendopo")
 
+    -- Gamelan stage
+    local stage = Instance.new("Part")
+    stage.Name = "GamelanStage"
+    stage.Size = Vector3.new(16, 1, 10)
+    stage.Position = Vector3.new(-100, 0.5, -100)
+    stage.Anchored = true
+    stage.Color = Color3.fromRGB(140, 90, 40)
+    stage.Material = Enum.Material.Wood
+    stage.Parent = workspace
+
+    -- Sawah (rice field - green flat)
+    local sawah = Instance.new("Part")
+    sawah.Name = "Sawah"
+    sawah.Size = Vector3.new(30, 0.3, 20)
+    sawah.Position = Vector3.new(-140, 0.15, -100)
+    sawah.Anchored = true
+    sawah.Color = Color3.fromRGB(100, 180, 60)
+    sawah.Material = Enum.Material.Grass
+    sawah.Parent = workspace
+
+    -- Jawa trees (bamboo-like)
+    for _, tpos in ipairs({
+        Vector3.new(-150, 0, -150), Vector3.new(-90, 0, -150),
+        Vector3.new(-150, 0, -90), Vector3.new(-90, 0, -90),
+        Vector3.new(-140, 0, -130), Vector3.new(-100, 0, -140),
+    }) do buildTree(workspace, tpos, 12) end
+
+    -- Jawa water
+    buildWater(workspace, Vector3.new(-100, 0.15, -140), Vector3.new(15, 0.3, 15))
+
+    -- ==========================================
+    -- SUMATRA AREA (Rumah Gadang + Market)
+    -- ==========================================
+    -- Rumah Gadang (Minangkabau house with horn-like roof)
+    buildHouse(workspace, Vector3.new(130, 0, -140), 20, 10, 14,
+        Color3.fromRGB(170, 130, 70), Color3.fromRGB(180, 50, 30), "Rumah_Gadang")
+
+    -- Additional house
+    buildHouse(workspace, Vector3.new(110, 0, -120), 12, 8, 10,
+        Color3.fromRGB(150, 110, 60), Color3.fromRGB(160, 60, 30), "Rumah_Minang")
+
+    -- Market stalls
+    buildStall(workspace, Vector3.new(140, 0, -100), Color3.fromRGB(200, 80, 30), "Kios_Rendang")
+    buildStall(workspace, Vector3.new(140, 0, -115), Color3.fromRGB(30, 150, 200), "Kios_Batik")
+
+    -- Sumatra trees
+    for _, tpos in ipairs({
+        Vector3.new(100, 0, -150), Vector3.new(150, 0, -150),
+        Vector3.new(100, 0, -90), Vector3.new(150, 0, -90),
+    }) do buildTree(workspace, tpos, 11) end
+
+    -- ==========================================
+    -- BALI AREA (Pura + Sanggar)
+    -- ==========================================
+    -- Pura (temple)
+    buildTemple(workspace, Vector3.new(-120, 0, 110), 14)
+
+    -- Sanggar tari (dance studio)
+    buildHouse(workspace, Vector3.new(-100, 0, 140), 16, 10, 12,
+        Color3.fromRGB(200, 180, 140), Color3.fromRGB(100, 40, 20), "Sanggar_Tari")
+
+    -- Bale (open pavilion)
+    buildHouse(workspace, Vector3.new(-140, 0, 130), 10, 7, 10,
+        Color3.fromRGB(190, 170, 130), Color3.fromRGB(80, 35, 15), "Bale_Bali")
+
+    -- Bali water garden
+    buildWater(workspace, Vector3.new(-130, 0.15, 150), Vector3.new(18, 0.3, 12))
+
+    -- Bali trees
+    for _, tpos in ipairs({
+        Vector3.new(-150, 0, 100), Vector3.new(-90, 0, 100),
+        Vector3.new(-150, 0, 155), Vector3.new(-90, 0, 155),
+    }) do buildTree(workspace, tpos, 9) end
+
+    -- ==========================================
+    -- PAPUA AREA (Honai + Jungle)
+    -- ==========================================
+    -- Honai (round traditional house - approximated with cylinder)
+    local honai = Instance.new("Model")
+    honai.Name = "Honai"
+
+    local honaiBase = Instance.new("Part")
+    honaiBase.Name = "Base"
+    honaiBase.Size = Vector3.new(10, 6, 10)
+    honaiBase.Position = Vector3.new(120, 3, 120)
+    honaiBase.Anchored = true
+    honaiBase.Color = Color3.fromRGB(120, 80, 40)
+    honaiBase.Material = Enum.Material.Wood
+    honaiBase.Shape = Enum.PartType.Cylinder
+    honaiBase.Parent = honai
+
+    local honaiRoof = Instance.new("Part")
+    honaiRoof.Name = "Roof"
+    honaiRoof.Size = Vector3.new(12, 3, 12)
+    honaiRoof.Position = Vector3.new(120, 7.5, 120)
+    honaiRoof.Anchored = true
+    honaiRoof.Color = Color3.fromRGB(80, 60, 30)
+    honaiRoof.Material = Enum.Material.Slate
+    honaiRoof.Shape = Enum.PartType.Cylinder
+    honaiRoof.Parent = honai
+
+    honai.Parent = workspace
+
+    -- Second honai
+    local honai2 = Instance.new("Model")
+    honai2.Name = "Honai2"
+
+    local h2Base = Instance.new("Part")
+    h2Base.Name = "Base"
+    h2Base.Size = Vector3.new(8, 5, 8)
+    h2Base.Position = Vector3.new(140, 2.5, 130)
+    h2Base.Anchored = true
+    h2Base.Color = Color3.fromRGB(100, 70, 35)
+    h2Base.Material = Enum.Material.Wood
+    h2Base.Shape = Enum.PartType.Cylinder
+    h2Base.Parent = honai2
+
+    local h2Roof = Instance.new("Part")
+    h2Roof.Name = "Roof"
+    h2Roof.Size = Vector3.new(10, 2.5, 10)
+    h2Roof.Position = Vector3.new(140, 6.25, 130)
+    h2Roof.Anchored = true
+    h2Roof.Color = Color3.fromRGB(70, 50, 25)
+    h2Roof.Material = Enum.Material.Slate
+    h2Roof.Shape = Enum.PartType.Cylinder
+    h2Roof.Parent = honai2
+
+    honai2.Parent = workspace
+
+    -- Papua dense jungle (more trees)
+    for _, tpos in ipairs({
+        Vector3.new(100, 0, 100), Vector3.new(150, 0, 100),
+        Vector3.new(100, 0, 150), Vector3.new(150, 0, 150),
+        Vector3.new(110, 0, 130), Vector3.new(140, 0, 110),
+        Vector3.new(130, 0, 145), Vector3.new(105, 0, 115),
+    }) do buildTree(workspace, tpos, 14) end
+
+    -- Papua pond
+    buildWater(workspace, Vector3.new(140, 0.15, 110), Vector3.new(12, 0.3, 12))
+
+    -- ==========================================
+    -- PORTALS (with visible gate frames)
+    -- ==========================================
+    buildPortalFrame(workspace, Vector3.new(-80, 0, -80), Color3.fromRGB(255, 215, 0))
+    createPortal("PortalJawa", Vector3.new(-80, 7, -80), Vector3.new(-120, 2, -120),
+        Color3.fromRGB(255, 215, 0), "🟡 Wilayah Jawa", "quiz_jawa")
+
+    buildPortalFrame(workspace, Vector3.new(80, 0, -80), Color3.fromRGB(0, 200, 0))
+    createPortal("PortalSumatra", Vector3.new(80, 7, -80), Vector3.new(120, 2, -120),
+        Color3.fromRGB(0, 200, 0), "🟢 Wilayah Sumatra", "quiz_sumatra")
+
+    buildPortalFrame(workspace, Vector3.new(-80, 0, 80), Color3.fromRGB(0, 150, 255))
+    createPortal("PortalBali", Vector3.new(-80, 7, 80), Vector3.new(-120, 2, 120),
+        Color3.fromRGB(0, 150, 255), "🔵 Wilayah Bali", "quiz_bali")
+
+    buildPortalFrame(workspace, Vector3.new(80, 0, 80), Color3.fromRGB(150, 0, 200))
+    createPortal("PortalPapua", Vector3.new(80, 7, 80), Vector3.new(120, 2, 120),
+        Color3.fromRGB(150, 0, 200), "🟣 Wilayah Papua", "quiz_papua")
+
+    -- ==========================================
     -- NPCs
-    createNPC("Pak Dosen", Vector3.new(0, 2, 0), "Dosen", Color3.fromRGB(200, 150, 100), Color3.fromRGB(50, 50, 150))
-    createNPC("Pak Karso", Vector3.new(-50, 2, -50), "Karso", Color3.fromRGB(200, 150, 100), Color3.fromRGB(200, 50, 50))
-    createNPC("Ibu Ratna", Vector3.new(50, 2, -50), "Ratna", Color3.fromRGB(200, 150, 100), Color3.fromRGB(200, 100, 150))
-    createNPC("Mang Wayan", Vector3.new(-50, 2, 50), "Wayan", Color3.fromRGB(200, 150, 100), Color3.fromRGB(255, 200, 100))
-    createNPC("Bapak Yanu", Vector3.new(50, 2, 50), "Yanu", Color3.fromRGB(200, 150, 100), Color3.fromRGB(100, 50, 0))
+    -- ==========================================
+    createNPC("Pak Dosen", Vector3.new(0, 2, 5), "Dosen",
+        Color3.fromRGB(200, 150, 100), Color3.fromRGB(50, 50, 150))
+    createNPC("Pak Karso", Vector3.new(-120, 2, -130), "Karso",
+        Color3.fromRGB(200, 150, 100), Color3.fromRGB(200, 50, 50))
+    createNPC("Ibu Ratna", Vector3.new(120, 2, -130), "Ratna",
+        Color3.fromRGB(200, 150, 100), Color3.fromRGB(200, 100, 150))
+    createNPC("Mang Wayan", Vector3.new(-110, 2, 130), "Wayan",
+        Color3.fromRGB(200, 150, 100), Color3.fromRGB(255, 200, 100))
+    createNPC("Bapak Yanu", Vector3.new(130, 2, 130), "Yanu",
+        Color3.fromRGB(200, 150, 100), Color3.fromRGB(100, 50, 0))
 
-    -- Portals (quiz_jawa unlocked by default)
-    createPortal("PortalJawa", Vector3.new(-100, 6, -100), Vector3.new(-100, 2, -100), Color3.fromRGB(255, 215, 0), "🟡 Wilayah Jawa", "quiz_jawa")
-    createPortal("PortalSumatra", Vector3.new(100, 6, -100), Vector3.new(100, 2, -100), Color3.fromRGB(0, 200, 0), "🟢 Wilayah Sumatra", "quiz_sumatra")
-    createPortal("PortalBali", Vector3.new(-100, 6, 100), Vector3.new(-100, 2, 100), Color3.fromRGB(0, 150, 255), "🔵 Wilayah Bali", "quiz_bali")
-    createPortal("PortalPapua", Vector3.new(100, 6, 100), Vector3.new(100, 2, 100), Color3.fromRGB(150, 0, 200), "🟣 Wilayah Papua", "quiz_papua")
+    -- ==========================================
+    -- REGION LABELS
+    -- ==========================================
+    addLabel("🏫 KAMPUS (Spawn)", Vector3.new(0, 12, 0))
+    addLabel("🟡 Wilayah Jawa", Vector3.new(-120, 12, -120))
+    addLabel("🟢 Wilayah Sumatra", Vector3.new(120, 12, -120))
+    addLabel("🔵 Wilayah Bali", Vector3.new(-120, 12, 120))
+    addLabel("🟣 Wilayah Papua", Vector3.new(120, 12, 120))
 
-    -- Region labels
-    local regions = {
-        {name = "🏫 KAMPUS (Spawn)", pos = Vector3.new(0, 10, 0)},
-        {name = "🟡 JAWA", pos = Vector3.new(-100, 10, -100)},
-        {name = "🟢 SUMATRA", pos = Vector3.new(100, 10, -100)},
-        {name = "🔵 BALI", pos = Vector3.new(-100, 10, 100)},
-        {name = "🟣 PAPUA", pos = Vector3.new(100, 10, 100)},
-    }
-
-    for _, region in ipairs(regions) do
-        local billboard = Instance.new("BillboardGui")
-        billboard.Size = UDim2.new(0, 300, 0, 60)
-        billboard.StudsOffset = Vector3.new(0, 0, 0)
-        billboard.Parent = workspace
-
-        local part = Instance.new("Part")
-        part.Name = "Label_" .. region.name
-        part.Size = Vector3.new(1, 1, 1)
-        part.Position = region.pos
-        part.Anchored = true
-        part.CanCollide = false
-        part.Transparency = 1
-        part.Parent = workspace
-        billboard.Adornee = part
-
-        local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(1, 0, 1, 0)
-        lbl.BackgroundTransparency = 0.5
-        lbl.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        lbl.Text = region.name
-        lbl.TextScaled = true
-        lbl.Font = Enum.Font.GothamBold
-        lbl.Parent = billboard
-    end
+    -- ==========================================
+    -- DECORATIVE TREES (scattered around main area)
+    -- ==========================================
+    for _, tpos in ipairs({
+        Vector3.new(-40, 0, -40), Vector3.new(40, 0, -40),
+        Vector3.new(-40, 0, 40), Vector3.new(40, 0, 40),
+        Vector3.new(-60, 0, 0), Vector3.new(60, 0, 0),
+        Vector3.new(0, 0, -60), Vector3.new(0, 0, 60),
+    }) do buildTree(workspace, tpos, 10) end
 
     print("✅ World created!")
 end
